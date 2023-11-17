@@ -54,6 +54,8 @@ vocab = Vocab(tokens_dict, vectors_dict)
 with open('./data/vocab.pkl', "wb") as f:
     pickle.dump(vocab, f)
 
+
+"""
 print(vocab['[cls]'])
 data = pd.read_excel('./data/cutwords.xlsx')
 a = "[cls],慢性,肾病,患者,复诊"
@@ -68,5 +70,4 @@ print(b)
 b = b.split(",")
 b = torch.tensor([vocab.get_vector(token) for token in b])
 b = torch.mean(b, dim=0)
-
-print(cosine_similarity(a, b))
+"""
