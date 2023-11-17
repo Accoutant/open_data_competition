@@ -1,7 +1,8 @@
 import torch
 import pandas as pd
+import pickle
 
-with open('vocab.txt', 'r', encoding='utf-8') as f:
+with open('./data/vocab.txt', 'r', encoding='utf-8') as f:
     vocabs = f.readlines()
 
 tokens_dict = {}
@@ -10,7 +11,7 @@ for token in vocabs:
     tokens_dict[word] = idx.replace('\n', '')
 
 
-with open('vectors.txt', 'r', encoding='utf-8') as f:
+with open('./data/vectors.txt', 'r', encoding='utf-8') as f:
     vectors = f.readlines()
 
 vectors_dict = {}
@@ -45,19 +46,24 @@ class Vocab:
 
 
 def cosine_similarity(x, y):
+    """计算相似度"""
     return (torch.dot(x, y) / (torch.norm(x) * torch.norm(y))).item()
 
 
 vocab = Vocab(tokens_dict, vectors_dict)
-data = pd.read_excel('cutwords.xlsx')
-a = "甲亢,必须,吃,无,碘,的,盐,吗"
+with open('./data/vocab.pkl', "wb") as f:
+    pickle.dump(vocab, f)
+
+print(vocab['[cls]'])
+data = pd.read_excel('./data/cutwords.xlsx')
+a = "[cls],慢性,肾病,患者,复诊"
 print(a)
 a = a.split(",")
 a = torch.tensor([vocab.get_vector(token) for token in a])
 a = torch.mean(a, dim=0)
 
 
-b = "甲状腺,旁腺,激素,低,怎么办"
+b = "[cls],慢性,肾炎,复查"
 print(b)
 b = b.split(",")
 b = torch.tensor([vocab.get_vector(token) for token in b])
