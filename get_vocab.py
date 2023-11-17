@@ -2,25 +2,6 @@ import torch
 import pandas as pd
 import pickle
 
-with open('./data/vocab.txt', 'r', encoding='utf-8') as f:
-    vocabs = f.readlines()
-
-tokens_dict = {}
-for token in vocabs:
-    word, idx = token.split(" ")
-    tokens_dict[word] = idx.replace('\n', '')
-
-
-with open('./data/vectors.txt', 'r', encoding='utf-8') as f:
-    vectors = f.readlines()
-
-vectors_dict = {}
-for item in vectors:
-    temp = item.replace("\n", "").split(" ")
-    word, vector = temp[0], temp[1:]
-    vector = [float(num) for num in vector]
-    vectors_dict[word] = vector
-
 
 class Vocab:
     def __init__(self, token_dict: dict, vectors_dict: dict):
@@ -50,24 +31,45 @@ def cosine_similarity(x, y):
     return (torch.dot(x, y) / (torch.norm(x) * torch.norm(y))).item()
 
 
-vocab = Vocab(tokens_dict, vectors_dict)
-with open('./data/vocab.pkl', "wb") as f:
-    pickle.dump(vocab, f)
+if __name__ == "__main__":
+    with open('./data/vocab.txt', 'r', encoding='utf-8') as f:
+        vocabs = f.readlines()
+
+    tokens_dict = {}
+    for token in vocabs:
+        word, idx = token.split(" ")
+        tokens_dict[word] = idx.replace('\n', '')
+
+    with open('./data/vectors.txt', 'r', encoding='utf-8') as f:
+        vectors = f.readlines()
+
+    vectors_dict = {}
+    for item in vectors:
+        temp = item.replace("\n", "").split(" ")
+        word, vector = temp[0], temp[1:]
+        vector = [float(num) for num in vector]
+        vectors_dict[word] = vector
+    vectors_dict['[pad]'] = [0] * 50
+
+    # 保持vocab
+    vocab = Vocab(tokens_dict, vectors_dict)
+    with open('./data/vocab.pkl', "wb") as f:
+        pickle.dump(vocab, f)
 
 
-"""
-print(vocab['[cls]'])
-data = pd.read_excel('./data/cutwords.xlsx')
-a = "[cls],慢性,肾病,患者,复诊"
-print(a)
-a = a.split(",")
-a = torch.tensor([vocab.get_vector(token) for token in a])
-a = torch.mean(a, dim=0)
-
-
-b = "[cls],慢性,肾炎,复查"
-print(b)
-b = b.split(",")
-b = torch.tensor([vocab.get_vector(token) for token in b])
-b = torch.mean(b, dim=0)
-"""
+    """
+    print(vocab['[cls]'])
+    data = pd.read_excel('./data/cutwords.xlsx')
+    a = "[cls],慢性,肾病,患者,复诊"
+    print(a)
+    a = a.split(",")
+    a = torch.tensor([vocab.get_vector(token) for token in a])
+    a = torch.mean(a, dim=0)
+    
+    
+    b = "[cls],慢性,肾炎,复查"
+    print(b)
+    b = b.split(",")
+    b = torch.tensor([vocab.get_vector(token) for token in b])
+    b = torch.mean(b, dim=0)
+    """
