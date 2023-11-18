@@ -49,7 +49,7 @@ if __name__ == "__main__":
         word, vector = temp[0], temp[1:]
         vector = [float(num) for num in vector]
         vectors_dict[word] = vector
-    vectors_dict['[pad]'] = [0] * 50
+    vectors_dict['[pad]'] = [0] * 128
 
     # 保持vocab
     vocab = Vocab(tokens_dict, vectors_dict)
@@ -57,19 +57,18 @@ if __name__ == "__main__":
         pickle.dump(vocab, f)
 
 
-    """
+
     print(vocab['[cls]'])
-    data = pd.read_excel('./data/cutwords.xlsx')
-    a = "[cls],慢性,肾病,患者,复诊"
+    # data = pd.read_excel('./data/cutwords.xlsx')
+    a = "[cls],肾病,综合征,发现,右,颈部,肿物,数月"
     print(a)
     a = a.split(",")
     a = torch.tensor([vocab.get_vector(token) for token in a])
     a = torch.mean(a, dim=0)
-    
-    
-    b = "[cls],慢性,肾炎,复查"
+
+    b = "[cls],肾病,综合征,13,年"
     print(b)
     b = b.split(",")
     b = torch.tensor([vocab.get_vector(token) for token in b])
     b = torch.mean(b, dim=0)
-    """
+    print(cosine_similarity(a, b))

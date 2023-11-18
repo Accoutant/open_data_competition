@@ -5,8 +5,10 @@ import re
 def formate_department(x):
     x = x.replace("(", "<")
     x = x.replace(")", ">")
+    x = x.replace("）", ">")
+    x = x.replace("（", "<")
     try:
-        y = re.findall("(<.{2}?院区>)", x)[0]
+        y = re.findall("(<.*>)", x)[0]
         x = x.replace(y, "")
     except:
         pass

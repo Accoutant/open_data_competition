@@ -1,9 +1,8 @@
-import torch
 import pandas as pd
 from torch.utils.data import DataLoader, Dataset
 import numpy as np
 import pickle
-from get_vocab import Vocab
+from pandas import DataFrame
 
 
 def split_train_test(x_data, t_data, z_data, seed, rate):
@@ -29,7 +28,6 @@ def split_train_test(x_data, t_data, z_data, seed, rate):
     return (x_train, t_train, z_train), (x_test, t_test, z_test)
 
 
-
 class Patient(Dataset):
     def __init__(self, patient_ids, complaints, departments):
         super().__init__()
@@ -51,11 +49,21 @@ if __name__ == '__main__':
     complaint = np.array(data['seg'])
     department = np.array(data['就诊科室名称_encode'])
 
-    (patient_IDs_train, complaint_train, department_train), (patient_IDs_test, complaint_test, department_test) = split_train_test(patient_IDs, complaint, department, seed=2023, rate=0.8)
+    # 获取unique科室字典
+    data = data[['就诊科室名称', '就诊科室名称_encode']]
+    data.drop_duplicates(subset=['就诊科室名称', '就诊科室名称_encode'], inplace=True)
+    data: DataFrame
+    department_dict = {}
+    for index, item in data.iterrows():
+        department_name = item[0]
+        encode = item[1]
+        department_dict[encode] = department_name
+    print(department_dict)
+    with open("data/department_dict.pkl", "wb") as f:
+        pickle.dump(department_dict, f)
 
-    with open("./data/vocab.pkl", "rb") as f:
-        vocab = pickle.load(f)
-    vocab: Vocab
+    # 划分测试集和训练集
+    (patient_IDs_train, complaint_train, department_train), (patient_IDs_test, complaint_test, department_test) = split_train_test(patient_IDs, complaint, department, seed=2023, rate=0.8)
 
     patient_train = Patient(patient_IDs_train, complaint_train, department_train)
     patient_test = Patient(patient_IDs_test, complaint_test, department_test)

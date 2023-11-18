@@ -9,7 +9,6 @@ from get_vocab import Vocab
 from process_data import Patient
 
 
-
 class Bertblock(nn.Module):
     def __init__(self, hidden_size, num_heads, dropout):
         super().__init__()
@@ -35,7 +34,8 @@ class Bert(nn.Module):
         self.blocks = nn.Sequential()
         for i in range(num_layers):
             self.blocks.add_module("bertblock"+str(i), Bertblock(hidden_size, num_heads, dropout))
-        self.linear = nn.Linear(50, out_features)
+        self.linear = nn.Linear(hidden_size, out_features)
+
 
     def forward(self, X):
         vec = self.blocks(X)[:, 0, :]
@@ -59,7 +59,7 @@ class Trainer:
         animator = d2l.Animator(xlabel="epoch", ylabel="loss", legend=['train_loss', "test_loss", "test_acc"])
         for epoch in range(max_epochs):
             iter = 1
-            metric = d2l.Accumulator(5)
+            metric = d2l.Accumulator(6)
             for patient_IDs, X, Y in train_iter:
                 num = len(train_iter)
                 X = list(X)
@@ -69,12 +69,13 @@ class Trainer:
                 loss = self.loss(output, Y).mean()
                 self.optimizer.zero_grad()
                 loss.backward()
+                nn.utils.clip_grad_norm_(self.net.parameters(), 1)
                 self.optimizer.step()
                 vec = vec.cpu()
                 vec = vec.detach().numpy()
                 if epoch+1 == max_epochs:
                     patient_vecs.append((patient_IDs, vec))
-                metric.add(1, loss.item(), 0, 0, 0)
+                metric.add(1, loss.item(), 0, 0, 0, 0)
                 print('| epoch %d | iter %d/%d | train loss %.4f |' % (epoch+1, iter, num, metric[1]/metric[0]))
                 iter += 1
 
@@ -91,9 +92,9 @@ class Trainer:
                         patient_vecs.append((patient_IDs_test, vec))
                     loss = self.loss(output, Y_test).mean()
                     acc = d2l.accuracy(output, Y_test)
-                    metric.add(0, 0, 1, loss.item(), acc)
-            print('| epoch %d | test loss %.4f | acc %.4f |' % (epoch+1, metric[3]/metric[2], metric[4]/metric[2]))
-            animator.add(epoch+1, [metric[1]/metric[0], metric[3]/metric[2], metric[4]/metric[2]])
+                    metric.add(0, 0, 1, loss.item(), len(X_test), acc)
+            print('| epoch %d | test loss %.4f | acc %.4f |' % (epoch+1, metric[3]/metric[2], metric[5]/metric[4]))
+            animator.add(epoch+1, [metric[1]/metric[0], metric[3]/metric[2], metric[5]/metric[4]])
         torch.save(self.net.state_dict(), "./data/param.pkl")
         return patient_vecs
 
@@ -108,7 +109,7 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    bert = Bert(50, 5, 0, 3, 354)
+    bert = Bert(128, 16, 0, 3, 188)
     with open("./data/train_iter.pkl", "rb") as f:
         train_iter = pickle.load(f)
     with open("./data/test_iter.pkl", "rb") as f:
@@ -118,7 +119,7 @@ if __name__ == "__main__":
     loss = CrossEntropyLoss()
     optimizer = Adam
     trainer = Trainer(bert, loss, optimizer, lr=0.1, device=d2l.try_gpu(), vocab=vocab, max_len=10)
-    patient_vecs = trainer.fit(train_iter, test_iter, 2)
+    patient_vecs = trainer.fit(train_iter, test_iter, 3)
     with open("patient_vecs.pkl", "wb") as f:
         pickle.dump(patient_vecs, f)
 
