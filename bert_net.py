@@ -29,19 +29,22 @@ class Bertblock(nn.Module):
 
 
 class Bert(nn.Module):
-    def __init__(self, hidden_size, num_heads, dropout, num_layers, out_features):
+    def __init__(self, hidden_size1, hidden_size2, num_heads, dropout, num_layers, out_features):
         super().__init__()
+        self.norm = nn.LayerNorm(hidden_size1)
         self.blocks = nn.Sequential()
         for i in range(num_layers):
-            self.blocks.add_module("bertblock"+str(i), Bertblock(hidden_size, num_heads, dropout))
-        self.linear = nn.Linear(hidden_size, out_features)
+            self.blocks.add_module("bertblock"+str(i), Bertblock(hidden_size1, num_heads, dropout))
+        self.linear1 = nn.Linear(hidden_size1, hidden_size2)
+        self.linear2 = nn.Linear(hidden_size2, out_features)
 
 
     def forward(self, X):
+        X = self.norm(X)
         vec = self.blocks(X)[:, 0, :]
-        output = self.linear(vec)
+        output = self.linear1(vec)
+        output = self.linear2(output)
         return vec, output
-
 
 class Trainer:
     def __init__(self, net, loss, optimizer, lr, device, vocab, max_len=10):
@@ -109,7 +112,7 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    bert = Bert(128, 16, 0, 3, 188)
+    bert = Bert(128, 200, 16, 0, 4, 188)
     with open("./data/train_iter.pkl", "rb") as f:
         train_iter = pickle.load(f)
     with open("./data/test_iter.pkl", "rb") as f:
@@ -118,8 +121,8 @@ if __name__ == "__main__":
         vocab = pickle.load(f)
     loss = CrossEntropyLoss()
     optimizer = Adam
-    trainer = Trainer(bert, loss, optimizer, lr=0.1, device=d2l.try_gpu(), vocab=vocab, max_len=10)
-    patient_vecs = trainer.fit(train_iter, test_iter, 3)
+    trainer = Trainer(bert, loss, optimizer, lr=0.01, device=d2l.try_gpu(), vocab=vocab, max_len=10)
+    patient_vecs = trainer.fit(train_iter, test_iter, 5)
     with open("patient_vecs.pkl", "wb") as f:
         pickle.dump(patient_vecs, f)
 

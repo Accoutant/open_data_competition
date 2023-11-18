@@ -24,8 +24,10 @@ def predict(net, x, vocab, max_len=10):
 
 
 if __name__ == '__main__':
-    net = Bert(128, 16, 0, 3, 188)
+    net = Bert(128, 200, 16, 0, 4, 188)
+    net.load_state_dict(torch.load("./data/param.pkl"))
+    net.eval()
     with open("./data/vocab.pkl", "rb") as f:
         vocab = pickle.load(f)
-    x = "甲亢,停药,复查"
+    x = "心房颤动,高血压病,复诊"
     predict(net, x, vocab)
