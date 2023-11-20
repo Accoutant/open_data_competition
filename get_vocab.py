@@ -60,13 +60,13 @@ if __name__ == "__main__":
 
     print(vocab['[cls]'])
     # data = pd.read_excel('./data/cutwords.xlsx')
-    a = "[cls],肾病,综合征,发现,右,颈部,肿物,数月"
+    a = "肾病,综合征,发现,右,颈部,肿物,数月"
     print(a)
     a = a.split(",")
     a = torch.tensor([vocab.get_vector(token) for token in a])
     a = torch.mean(a, dim=0)
 
-    b = "[cls],肾病,综合征,13,年"
+    b = "肾病,综合征,13,年"
     print(b)
     b = b.split(",")
     b = torch.tensor([vocab.get_vector(token) for token in b])

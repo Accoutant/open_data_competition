@@ -5,6 +5,7 @@ from d2l import torch as d2l
 import numpy as np
 from torch.optim import Adam
 from torch.nn import CrossEntropyLoss
+import matplotlib.pyplot as plt
 from get_vocab import Vocab
 from process_data import Patient
 
@@ -45,6 +46,28 @@ class Bert(nn.Module):
         output = self.linear1(vec)
         output = self.linear2(output)
         return vec, output
+
+
+class LSTM(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, dropout, out_features):
+        super().__init__()
+        self.norm = nn.LayerNorm(input_size)
+        self.linear1 = nn.Linear(input_size, hidden_size)
+        self.lstm = nn.LSTM(hidden_size, hidden_size, num_layers, batch_first=True, dropout=dropout)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+        self.linear3 = nn.Linear(hidden_size, out_features)
+        self.relu = nn.ReLU()
+        self.layer = num_layers
+
+    def forward(self, X):
+        X = self.norm(X)
+        X = self.linear1(X)
+        _, (h, c) = self.lstm(X)
+        h = h[self.layer-1, :, :]
+        output = self.linear2(h)
+        output = self.relu(self.linear3(output))
+        return h, output
+
 
 class Trainer:
     def __init__(self, net, loss, optimizer, lr, device, vocab, max_len=10):
@@ -98,11 +121,12 @@ class Trainer:
                     metric.add(0, 0, 1, loss.item(), len(X_test), acc)
             print('| epoch %d | test loss %.4f | acc %.4f |' % (epoch+1, metric[3]/metric[2], metric[5]/metric[4]))
             animator.add(epoch+1, [metric[1]/metric[0], metric[3]/metric[2], metric[5]/metric[4]])
+        plt.savefig("./logs/loss.jpg")
         torch.save(self.net.state_dict(), "./data/param.pkl")
         return patient_vecs
 
     def tokenizer(self, x):
-        x = ['[cls]'] + x.split(",")
+        x = x.split(",")
         n = len(x)
         if n < self.max_len:
             x = x + ['[pad]'] * (self.max_len - n)
@@ -112,7 +136,8 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    bert = Bert(128, 200, 16, 0, 4, 188)
+    lstm = LSTM(128, 128, 3, 0, 70)
+    bert = Bert(256, 200, 16, 0, 4, 188)
     with open("./data/train_iter.pkl", "rb") as f:
         train_iter = pickle.load(f)
     with open("./data/test_iter.pkl", "rb") as f:
@@ -121,8 +146,8 @@ if __name__ == "__main__":
         vocab = pickle.load(f)
     loss = CrossEntropyLoss()
     optimizer = Adam
-    trainer = Trainer(bert, loss, optimizer, lr=0.01, device=d2l.try_gpu(), vocab=vocab, max_len=10)
-    patient_vecs = trainer.fit(train_iter, test_iter, 5)
-    with open("patient_vecs.pkl", "wb") as f:
+    trainer = Trainer(lstm, loss, optimizer, lr=0.01, device=d2l.try_gpu(), vocab=vocab, max_len=6)
+    patient_vecs = trainer.fit(train_iter, test_iter, 3)
+    with open("./data/patient_vecs.pkl", "wb") as f:
         pickle.dump(patient_vecs, f)
 

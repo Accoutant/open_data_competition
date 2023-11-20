@@ -44,6 +44,8 @@ class Patient(Dataset):
 
 if __name__ == '__main__':
     data = pd.read_excel("./data/merged.xlsx")
+    # data['就诊科室名称_encode'] = pd.Categorical(data['就诊科室名称']).codes
+    # data.to_excel("./data/merged.xlsx")
     print(len(data['就诊科室名称'].unique()))
     patient_IDs = np.array(data['患者编码'])
     complaint = np.array(data['seg'])
